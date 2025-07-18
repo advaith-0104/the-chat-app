@@ -1,3 +1,4 @@
+# Folder renamed to the_chat_app for Render deploy fix
 import os
 import hashlib
 from datetime import datetime
