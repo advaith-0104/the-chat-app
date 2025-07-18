@@ -162,8 +162,8 @@ def get_messages():
     return jsonify(success=True, messages=messages)
 
 @app.route("/")
-def home():
-    return "The Chat App is Live! 🎉"
+def serve_main():
+    return send_from_directory('.', 'login.html')  # or 'dash.html'
 
 # ─── Run the App ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
