@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign Up</title>
+  <style>
+    body {
+      background: #f0f2f5;
+      font-family: Arial, sans-serif;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 80px auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #4a4a4a;
+      margin-bottom: 25px;
+    }
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 30px;
+      background: #4CAF50;
+      border: none;
+      color: #fff;
+      font-size: 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .error {
+      color: red;
+      margin-top: 15px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Create Your Account</h2>
+    <label for="username">Username</label>
+    <input id="username" type="text" placeholder="e.g. adi123" />
+    
+    <label for="email">Gmail Address</label>
+    <input id="email" type="email" placeholder="you@gmail.com" />
+    
+    <div id="error" class="error"></div>
+    <button onclick="nextStep()">Next</button>
+  </div>
+
+  <script>
+    function nextStep() {
+      const username = document.getElementById('username').value.trim().toLowerCase();
+      const email = document.getElementById('email').value.trim().toLowerCase();
+      const err = document.getElementById('error');
+      err.textContent = '';
+
+      if (!username || !email) {
+        err.textContent = 'Both fields are required.';
+        return;
+      }
+      if (!email.endsWith('@gmail.com')) {
+        err.textContent = 'Use a valid Gmail address.';
+        return;
+      }
+
+      sessionStorage.setItem('signupUsername', username);
+      sessionStorage.setItem('signupEmail', email);
+      window.location = 'password.html';
+    }
+  </script>
+</body>
+</html>

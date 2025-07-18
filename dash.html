@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard</title>
+  <style>
+    body {
+      background: #f0f2f5;
+      font-family: Arial, sans-serif;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      width: 90vw;
+      max-width: 1200px;
+      margin: 20px auto;
+      min-height: 85vh;
+      background: #fff;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #4a4a4a;
+      margin-bottom: 30px;
+      font-size: 2em;
+    }
+    input {
+      width: 100%;
+      padding: 16px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1.1em;
+      box-sizing: border-box;
+    }
+    .error {
+      color: red;
+      text-align: center;
+      margin-bottom: 15px;
+      font-size: 1em;
+    }
+    .friend {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px;
+      border-bottom: 1px solid #eee;
+      font-size: 1.1em;
+    }
+    .friend button {
+      margin-left: 10px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background 0.3s;
+      background: #4CAF50;
+      color: #fff;
+    }
+    .friend button:hover {
+      background: #388E3C;
+    }
+    .friend .remove {
+      background: #f44336;
+    }
+    .friend .remove:hover {
+      background: #d32f2f;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Welcome, <span id="me"></span></h2>
+
+    <input id="search" placeholder="Search username..." />
+    <div id="error" class="error"></div>
+    <div id="friends"></div>
+  </div>
+
+  <script>
+    const me = sessionStorage.getItem('userUsername');
+    if (!me) location = 'login.html';
+    document.getElementById('me').textContent = me;
+
+    const error = document.getElementById('error');
+    const friendsDiv = document.getElementById('friends');
+    const searchInput = document.getElementById('search');
+
+    function loadFriends() {
+      fetch(`/api/get_friends?me=${me}`)
+        .then(r => r.json())
+        .then(data => {
+          if (!data.success) return;
+          friendsDiv.innerHTML = '';
+          data.friends.forEach(friend => {
+            const div = document.createElement('div');
+            div.className = 'friend';
+            div.innerHTML = `
+              <span>${friend}</span>
+              <div>
+                <button onclick="startChat('${friend}')">Chat</button>
+                <button class="remove" onclick="removeFriend('${friend}')">Remove</button>
+              </div>
+            `;
+            friendsDiv.appendChild(div);
+          });
+        });
+    }
+
+    function startChat(friend) {
+      sessionStorage.setItem('chatWith', friend);
+      location = 'chat.html';
+    }
+
+    function removeFriend(friend) {
+      fetch('/api/remove_friend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ me, them: friend })
+      }).then(() => loadFriends());
+    }
+
+    searchInput.addEventListener('keypress', e => {
+      if (e.key === 'Enter') {
+        const query = e.target.value.trim().toLowerCase();
+        if (!query || query === me) return;
+        fetch(`/api/search_user?q=${query}`)
+          .then(r => r.json())
+          .then(data => {
+            if (!data.found) {
+              error.textContent = 'User not found.';
+              return;
+            }
+            error.textContent = '';
+            fetch('/api/add_friend', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ me, them: query })
+            }).then(() => {
+              searchInput.value = '';    // ← Clear search box
+              loadFriends();
+            });
+          });
+      }
+    });
+
+    loadFriends();
+  </script>
+</body>
+</html>
