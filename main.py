@@ -13,7 +13,11 @@ app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 
 # ─── Initialize Firebase ──────────────────────────────────────────────────────
-cred = credentials.Certificate("serviceAccountKey.json")
+cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+if not cred_path or not os.path.exists(cred_path):
+    raise RuntimeError("Missing or invalid GOOGLE_APPLICATION_CREDENTIALS path")
+
+cred = credentials.Certificate(cred_path)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
