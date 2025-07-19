@@ -1,75 +1,48 @@
-<!-- dash.html - Chat Dashboard V1.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard</title>
+  <link rel="stylesheet" href="static/style.css" />
   <style>
     body {
-      background: #f0f2f5;
       font-family: Arial, sans-serif;
-      color: #333;
+      background: #f5f7fa;
+      padding: 20px;
     }
     .container {
       max-width: 800px;
-      margin: 40px auto;
+      margin: auto;
       background: #fff;
-      padding: 30px;
+      padding: 25px;
       border-radius: 10px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     h2 {
       text-align: center;
-      color: #4a4a4a;
-      margin-bottom: 25px;
+      margin-bottom: 20px;
+    }
+    input, textarea, button {
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 16px;
     }
     .section {
-      margin-top: 30px;
-    }
-    input, textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 8px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      box-sizing: border-box;
-    }
-    button {
-      padding: 12px 20px;
-      margin-top: 10px;
-      background: #4CAF50;
-      border: none;
-      color: #fff;
-      font-size: 16px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #45a049;
-    }
-    .error {
-      color: red;
-      margin-top: 15px;
-      text-align: center;
-    }
-    .messages {
-      border-top: 1px solid #ccc;
-      margin-top: 20px;
-      padding-top: 10px;
-    }
-    .message {
-      padding: 8px;
-      margin-bottom: 5px;
-      border-radius: 6px;
-      background: #e6f2ff;
+      margin-bottom: 30px;
     }
     .friend-list {
       list-style: none;
       padding-left: 0;
     }
     .friend-list li {
-      margin-bottom: 5px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
     }
   </style>
 </head>
@@ -83,116 +56,90 @@
     </div>
 
     <div class="section">
-      <h3>Search & Add Friend</h3>
-      <input id="search" placeholder="Enter username"/>
+      <h3>Search & Add/Remove Friend</h3>
+      <input id="search" placeholder="Enter username..." />
       <button onclick="searchUser()">Search</button>
       <button onclick="addFriend()">Add Friend</button>
+      <button onclick="removeFriend()">Remove Friend</button>
     </div>
 
     <div class="section">
-      <h3>Chat with a Friend</h3>
-      <input id="chatTarget" placeholder="Friend username"/>
-      <button onclick="loadMessages()">Load Messages</button>
-
-      <div class="messages" id="messages"></div>
-
-      <textarea id="chatMsg" rows="3" placeholder="Type your message here"></textarea>
-      <button onclick="sendMessage()">Send Message</button>
+      <h3>Chat</h3>
+      <input id="chatTarget" placeholder="Enter friend's username..." />
+      <button onclick="openChat()">Chat</button>
     </div>
 
-    <div class="section">
-      <button onclick="logout()">Logout</button>
-    </div>
+    <button onclick="logout()">Logout</button>
   </div>
 
   <script>
-    const username = sessionStorage.getItem('userUsername');
-    if (!username) location = 'login.html';
-    document.getElementById('user').textContent = username;
-
-    function searchUser() {
-      const query = document.getElementById('search').value.trim().toLowerCase();
-      if (!query) return alert("Enter a username to search.");
-      fetch('/api/search_user?q=' + query)
-        .then(res => res.json())
-        .then(data => {
-          console.log("🔍 Search result:", data);
-          alert(data.found ? `${query} found.` : `${query} not found.`);
-        });
-    }
-
-    function addFriend() {
-      const them = document.getElementById('search').value.trim().toLowerCase();
-      if (!them) return alert("Enter a username to add.");
-      fetch('/api/add_friend', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ me: username, them })
-      })
-      .then(res => res.json())
-      .then(data => {
-        console.log("➕ Add friend response:", data);
-        alert(data.success ? "Friend added." : data.message);
-        if (data.success) getFriends();
-      });
-    }
+    const username = sessionStorage.getItem("userUsername");
+    if (!username) location = "login.html";
+    document.getElementById("user").textContent = username;
 
     function getFriends() {
-      fetch('/api/get_friends?me=' + username)
+      fetch("/api/get_friends?me=" + username)
         .then(res => res.json())
         .then(data => {
-          console.log("🧑‍🤝‍🧑 Friends list:", data);
-          if (!data.success) return;
-          const ul = document.getElementById('friends');
-          ul.innerHTML = '';
+          const ul = document.getElementById("friends");
+          ul.innerHTML = "";
           data.friends.forEach(friend => {
-            const li = document.createElement('li');
-            li.textContent = friend;
+            const li = document.createElement("li");
+            li.innerHTML = `<span>${friend}</span>`;
             ul.appendChild(li);
           });
         });
     }
 
-    function loadMessages() {
-      const them = document.getElementById('chatTarget').value.trim().toLowerCase();
-      if (!them) return alert("Enter a friend's username.");
-      fetch(`/api/get_messages?me=${username}&them=${them}`)
+    function searchUser() {
+      const query = document.getElementById("search").value.trim();
+      if (!query) return alert("Enter a username.");
+      fetch("/api/search_user?q=" + query)
         .then(res => res.json())
         .then(data => {
-          console.log("💬 Messages:", data);
-          const box = document.getElementById('messages');
-          box.innerHTML = '';
-          data.messages.forEach(msg => {
-            const div = document.createElement('div');
-            div.className = 'message';
-            div.textContent = `${msg.sender}: ${msg.text}`;
-            box.appendChild(div);
-          });
+          alert(data.found ? `${query} found.` : `${query} not found.`);
         });
     }
 
-    function sendMessage() {
-      const them = document.getElementById('chatTarget').value.trim().toLowerCase();
-      const text = document.getElementById('chatMsg').value.trim();
-      if (!them || !text) return alert("Enter message and friend.");
-      fetch('/api/send_message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: username, to: them, message: text })
+    function addFriend() {
+      const them = document.getElementById("search").value.trim();
+      if (!them) return alert("Enter username to add.");
+      fetch("/api/add_friend", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({me: username, them})
       })
       .then(res => res.json())
       .then(data => {
-        console.log("📨 Message sent:", data);
-        if (data.success) {
-          document.getElementById('chatMsg').value = '';
-          loadMessages();
-        }
+        alert(data.success ? "Friend added!" : "Error adding friend.");
+        if (data.success) getFriends();
       });
+    }
+
+    function removeFriend() {
+      const them = document.getElementById("search").value.trim();
+      if (!them) return alert("Enter username to remove.");
+      fetch("/api/remove_friend", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({me: username, them})
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert(data.success ? "Friend removed!" : "Error removing friend.");
+        if (data.success) getFriends();
+      });
+    }
+
+    function openChat() {
+      const target = document.getElementById("chatTarget").value.trim();
+      if (!target) return alert("Enter a friend's username to chat.");
+      location = `chat.html?partner=${encodeURIComponent(target)}`;
     }
 
     function logout() {
       sessionStorage.clear();
-      location = 'login.html';
+      location = "login.html";
     }
 
     getFriends();
