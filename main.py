@@ -6,6 +6,8 @@ from firebase_admin import credentials, firestore
 import os
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
+print("🚀 App launched, ignition confirmed.")
+
 
 # ─── Firebase Credential Path ───────────────────────────────────────────────
 cred_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
