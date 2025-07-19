@@ -1,4 +1,4 @@
-<!-- Render deployment-ready login page -->
+<!-- login.html - Debug-prepped with console logs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -96,8 +96,12 @@
       const err = document.getElementById('error');
       err.textContent = '';
 
+      console.log("🚀 Login button clicked");
+      console.log("📡 Sending POST request to /api/login...");
+
       if (!username || !pw) {
         err.textContent = 'Both fields are required.';
+        console.warn("⚠️ Missing fields detected");
         return;
       }
 
@@ -108,12 +112,21 @@
       })
       .then(async res => {
         const data = await res.json();
+        console.log("✅ Response status:", res.status);
+        console.log("📨 Response payload:", data);
+
         if (!res.ok) {
-          err.textContent = data.message;
+          err.textContent = data.message || "Login failed.";
+          console.warn("❌ Login failed:", data.message);
         } else {
           sessionStorage.setItem('userUsername', username);
+          console.log("🎯 Login successful, redirecting to dash.html");
           location = 'dash.html';
         }
+      })
+      .catch(err => {
+        console.error("🧨 Fetch error during login:", err);
+        err.textContent = "Server error. Try again.";
       });
     }
   </script>

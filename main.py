@@ -1,4 +1,4 @@
-# Folder renamed to the_chat_app for Render deploy fix
+# Folder renamed to the_chat_app for the Render deployment fix!
 import os
 import hashlib
 from datetime import datetime
@@ -31,6 +31,10 @@ def hash_pw(pw: str) -> str:
 def serve_page(page):
     return send_from_directory('.', f"{page}.html")
 
+@app.route("/")
+def serve_main():
+    return send_from_directory('.', 'login.html')
+
 # ─── API: Sign Up ──────────────────────────────────────────────────────────────
 @app.route('/api/signup', methods=['POST'])
 def signup():
@@ -57,23 +61,30 @@ def signup():
     })
     return jsonify(success=True, message="User registered")
 
-# ─── API: Log In ───────────────────────────────────────────────────────────────
+# ─── API: Log In (Username Based) ──────────────────────────────────────────────
 @app.route('/api/login', methods=['POST'])
 def login():
-    data = request.json or {}
-    username = data.get('username', '').strip().lower()
-    pw = data.get('password', '')
+    try:
+        data = request.json or {}
+        username = data.get('username', '').strip().lower()
+        password = data.get('password', '')
 
-    doc = db.collection('users').document(username).get()
-    if not doc.exists:
-        return jsonify(success=False, message="No such user"), 404
+        if not username or not password:
+            return jsonify(success=False, message="Username and password required"), 400
 
-    stored = doc.to_dict().get('password', '')
-    if hash_pw(pw) != stored:
-        return jsonify(success=False, message="Wrong password"), 401
+        doc = db.collection("users").document(username).get()
+        if not doc.exists:
+            return jsonify(success=False, message="Username not found"), 404
 
-    return jsonify(success=True, message="Login successful")
+        stored_pw = doc.to_dict().get("password")
+        if hash_pw(password) != stored_pw:
+            return jsonify(success=False, message="Incorrect password"), 401
 
+        return jsonify(success=True, message="Login successful"), 200
+
+    except Exception as e:
+        print("🧨 Login route error:", e)
+        return jsonify(success=False, message="Server error. Try again later."), 500
 # ─── API: Search Users ─────────────────────────────────────────────────────────
 @app.route('/api/search_user', methods=['GET'])
 def search_user():
@@ -103,7 +114,7 @@ def add_friend():
     their_ref.update({'friends': firestore.ArrayUnion([me])})
     return jsonify(success=True)
 
-# ─── API: Remove Friend ───────────────────────────────────────────────────────
+# ─── API: Remove Friend ────────────────────────────────────────────────────────
 @app.route('/api/remove_friend', methods=['POST'])
 def remove_friend():
     data = request.json or {}
@@ -114,7 +125,7 @@ def remove_friend():
     db.collection('users').document(them).update({'friends': firestore.ArrayRemove([me])})
     return jsonify(success=True)
 
-# ─── API: Get My Friends ──────────────────────────────────────────────────────
+# ─── API: Get My Friends ───────────────────────────────────────────────────────
 @app.route('/api/get_friends', methods=['GET'])
 def get_friends():
     me = request.args.get('me', '').strip().lower()
@@ -124,7 +135,7 @@ def get_friends():
     friends = doc.to_dict().get('friends', [])
     return jsonify(success=True, friends=friends)
 
-# ─── API: Send Message ────────────────────────────────────────────────────────
+# ─── API: Send Message ─────────────────────────────────────────────────────────
 @app.route('/api/send_message', methods=['POST'])
 def send_message():
     data = request.json or {}
@@ -142,7 +153,7 @@ def send_message():
       .add({'sender': sender, 'text': text, 'timestamp': ts})
     return jsonify(success=True, timestamp=ts)
 
-# ─── API: Fetch Messages ──────────────────────────────────────────────────────
+# ─── API: Fetch Messages ───────────────────────────────────────────────────────
 @app.route('/api/get_messages', methods=['GET'])
 def get_messages():
     me = request.args.get('me', '').strip().lower()
@@ -161,11 +172,7 @@ def get_messages():
     ]
     return jsonify(success=True, messages=messages)
 
-@app.route("/")
-def serve_main():
-    return send_from_directory('.', 'login.html')  # or 'dash.html'
-
-# ─── Run the App ──────────────────────────────────────────────────────────────
+# ─── Run the App ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
