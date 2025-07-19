@@ -1,4 +1,4 @@
-# Folder renamed to the_chat_app for Render deploy fix
+<!-- Render deployment-ready login page -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -57,6 +57,18 @@
       margin-top: 15px;
       text-align: center;
     }
+    .register-link {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 15px;
+    }
+    .register-link a {
+      color: #007BFF;
+      text-decoration: none;
+    }
+    .register-link a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -71,6 +83,10 @@
 
     <div id="error" class="error"></div>
     <button onclick="login()">Login</button>
+
+    <p class="register-link">
+      Don't have an account? <a href="email.html">Sign up for free!!!</a>
+    </p>
   </div>
 
   <script>
