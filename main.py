@@ -1,32 +1,29 @@
-# Folder renamed to the_chat_app for the Render deployment fix!
-import os
+from flask import Flask, request, jsonify, send_from_directory
 import hashlib
 from datetime import datetime
-
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
-
 import firebase_admin
 from firebase_admin import credentials, firestore
+import os
 
-# ─── Initialize Flask ─────────────────────────────────────────────────────────
-app = Flask(__name__)
-CORS(app)
+app = Flask(__name__, static_folder="static", template_folder="templates")
 
-# ─── Initialize Firebase ──────────────────────────────────────────────────────
-cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-if not cred_path or not os.path.exists(cred_path):
+# ─── Firebase Credential Path ───────────────────────────────────────────────
+cred_path = r"C:\Users\advai\Downloads\chat-app-493a1-firebase-adminsdk-fbsvc-820ec5fabf.json"
+print("🧠 Credential Path:", cred_path)
+print("📂 File Exists:", os.path.exists(cred_path))
+
+if not os.path.exists(cred_path):
     raise RuntimeError("Missing or invalid GOOGLE_APPLICATION_CREDENTIALS path")
 
 cred = credentials.Certificate(cred_path)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-# ─── Helper: Hash Password ─────────────────────────────────────────────────────
+# ─── Helper: Hash Password ──────────────────────────────────────────────────
 def hash_pw(pw: str) -> str:
     return hashlib.sha256(pw.encode()).hexdigest()
 
-# ─── Serve HTML Pages ─────────────────────────────────────────────────────────
+# ─── Serve HTML Pages ──────────────────────────────────────────────────────
 @app.route('/<page>.html')
 def serve_page(page):
     return send_from_directory('.', f"{page}.html")
@@ -35,7 +32,7 @@ def serve_page(page):
 def serve_main():
     return send_from_directory('.', 'login.html')
 
-# ─── API: Sign Up ──────────────────────────────────────────────────────────────
+# ─── API: Sign Up ───────────────────────────────────────────────────────────
 @app.route('/api/signup', methods=['POST'])
 def signup():
     data = request.json or {}
@@ -61,31 +58,27 @@ def signup():
     })
     return jsonify(success=True, message="User registered")
 
-# ─── API: Log In (Username Based) ──────────────────────────────────────────────
+# ─── API: Log In ────────────────────────────────────────────────────────────
 @app.route('/api/login', methods=['POST'])
 def login():
-    try:
-        data = request.json or {}
-        username = data.get('username', '').strip().lower()
-        password = data.get('password', '')
+    data = request.json or {}
+    username = data.get('username', '').strip().lower()
+    password = data.get('password', '')
 
-        if not username or not password:
-            return jsonify(success=False, message="Username and password required"), 400
+    if not username or not password:
+        return jsonify(success=False, message="Username and password required"), 400
 
-        doc = db.collection("users").document(username).get()
-        if not doc.exists:
-            return jsonify(success=False, message="Username not found"), 404
+    doc = db.collection("users").document(username).get()
+    if not doc.exists:
+        return jsonify(success=False, message="Username not found"), 404
 
-        stored_pw = doc.to_dict().get("password")
-        if hash_pw(password) != stored_pw:
-            return jsonify(success=False, message="Incorrect password"), 401
+    stored_pw = doc.to_dict().get("password")
+    if hash_pw(password) != stored_pw:
+        return jsonify(success=False, message="Incorrect password"), 401
 
-        return jsonify(success=True, message="Login successful"), 200
+    return jsonify(success=True, message="Login successful")
 
-    except Exception as e:
-        print("🧨 Login route error:", e)
-        return jsonify(success=False, message="Server error. Try again later."), 500
-# ─── API: Search Users ─────────────────────────────────────────────────────────
+# ─── API: Search Users ──────────────────────────────────────────────────────
 @app.route('/api/search_user', methods=['GET'])
 def search_user():
     query = request.args.get('q', '').strip().lower()
@@ -95,7 +88,7 @@ def search_user():
     doc = db.collection('users').document(query).get()
     return jsonify(found=doc.exists, username=query)
 
-# ─── API: Add Friend ───────────────────────────────────────────────────────────
+# ─── API: Add Friend ────────────────────────────────────────────────────────
 @app.route('/api/add_friend', methods=['POST'])
 def add_friend():
     data = request.json or {}
@@ -114,7 +107,7 @@ def add_friend():
     their_ref.update({'friends': firestore.ArrayUnion([me])})
     return jsonify(success=True)
 
-# ─── API: Remove Friend ────────────────────────────────────────────────────────
+# ─── API: Remove Friend ─────────────────────────────────────────────────────
 @app.route('/api/remove_friend', methods=['POST'])
 def remove_friend():
     data = request.json or {}
@@ -125,7 +118,7 @@ def remove_friend():
     db.collection('users').document(them).update({'friends': firestore.ArrayRemove([me])})
     return jsonify(success=True)
 
-# ─── API: Get My Friends ───────────────────────────────────────────────────────
+# ─── API: Get Friends ───────────────────────────────────────────────────────
 @app.route('/api/get_friends', methods=['GET'])
 def get_friends():
     me = request.args.get('me', '').strip().lower()
@@ -135,7 +128,7 @@ def get_friends():
     friends = doc.to_dict().get('friends', [])
     return jsonify(success=True, friends=friends)
 
-# ─── API: Send Message ─────────────────────────────────────────────────────────
+# ─── API: Send Message ──────────────────────────────────────────────────────
 @app.route('/api/send_message', methods=['POST'])
 def send_message():
     data = request.json or {}
@@ -153,7 +146,7 @@ def send_message():
       .add({'sender': sender, 'text': text, 'timestamp': ts})
     return jsonify(success=True, timestamp=ts)
 
-# ─── API: Fetch Messages ───────────────────────────────────────────────────────
+# ─── API: Fetch Messages ────────────────────────────────────────────────────
 @app.route('/api/get_messages', methods=['GET'])
 def get_messages():
     me = request.args.get('me', '').strip().lower()
@@ -165,14 +158,16 @@ def get_messages():
                  .order_by('timestamp')
     docs = msgs_ref.stream()
     messages = [
-        {'sender': doc.to_dict()['sender'],
-         'text': doc.to_dict()['text'],
-         'timestamp': doc.to_dict()['timestamp']}
+        {
+            'sender': doc.to_dict()['sender'],
+            'text': doc.to_dict()['text'],
+            'timestamp': doc.to_dict()['timestamp']
+        }
         for doc in docs
     ]
     return jsonify(success=True, messages=messages)
 
-# ─── Run the App ───────────────────────────────────────────────────────────────
+# ─── Run App ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)

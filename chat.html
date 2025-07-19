@@ -138,90 +138,100 @@
   <div class="chat-container">
     <header>
       <h2>Chat with <span id="chatWithName"></span></h2>
-      <button onclick="goBack()">Back</button>
+      <button id="backBtn">Back</button>
     </header>
     <div id="messages"></div>
     <div id="messageSection">
-      <input id="message" placeholder="Type your message…" onkeypress="checkEnter(event)" />
-      <button id="sendBtn" onclick="sendMessage()">Send</button>
+      <input id="message" placeholder="Type your message…" />
+      <button id="sendBtn">Send</button>
     </div>
   </div>
 
   <script>
-    const me = sessionStorage.getItem('userUsername');
-    const them = sessionStorage.getItem('chatWith');
-    if (!me || !them) location = 'dash.html';
-
-    document.getElementById('chatWithName').textContent = them;
-    const messagesDiv = document.getElementById('messages');
-    const messageInput = document.getElementById('message');
-
-   function fetchMessages() {
-  fetch(`/api/get_messages?me=${me}&them=${them}`)
-    .then(r => r.json())
-    .then(data => {
-      if (!data.success) return;
-      messagesDiv.innerHTML = '';
-      data.messages.forEach(m => {
-        const div = document.createElement('div');
-        div.className = 'message ' + (m.sender === me ? 'sent' : 'received');
-
-        // Convert Firebase timestamp to local time
-        const ts = new Date(m.timestamp);
-        const localTs = new Date(ts.getTime() - ts.getTimezoneOffset() * 60000);
-
-        const date = localTs.toLocaleDateString('en-IN'); // e.g. 18/07/2025
-        const hours = localTs.getHours(); // 0–23
-        const minutes = localTs.getMinutes().toString().padStart(2, '0');
-        const suffix = hours >= 12 ? 'PM' : 'AM';
-
-        const timeFormatted = `${hours.toString().padStart(2, '0')}:${minutes} ${suffix}`;
-        const formatted = `${date} ${timeFormatted}`;
-
-        div.innerHTML = `
-          <p>${m.text}</p>
-          <span class="ts">${formatted}</span>
-        `;
-        messagesDiv.appendChild(div);
-      });
-
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    });
-}
-
-          messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        
-
-    function sendMessage() {
-      const txt = messageInput.value.trim();
-      if (!txt) return;
-      fetch('/api/send_message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: me, to: them, message: txt })
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (data.success) {
-          messageInput.value = '';
-          fetchMessages();
-        }
-      });
-    }
-
-    function checkEnter(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        sendMessage();
+    document.addEventListener("DOMContentLoaded", function () {
+      const urlParams = new URLSearchParams(location.search);
+      const partner = urlParams.get("partner");
+      if (partner !== null) {
+        sessionStorage.setItem("chatWith", partner);
       }
-    }
 
-    function goBack() {
-      location = 'dash.html';
-    }
+      const me = sessionStorage.getItem("userUsername");
+      const them = sessionStorage.getItem("chatWith");
 
-    fetchMessages();
-    setInterval(fetchMessages, 3000);
+      if (!me || !them) {
+        console.warn("Missing user/session data:", { me, them });
+        window.location.href = "dash.html";
+        return;
+      }
+
+      document.getElementById("chatWithName").textContent = them;
+
+      const messagesDiv = document.getElementById("messages");
+      const messageInput = document.getElementById("message");
+
+      function fetchMessages() {
+        fetch(`/api/get_messages?me=${me}&them=${them}`)
+          .then((r) => r.json())
+          .then((data) => {
+            if (!data.success) return;
+            messagesDiv.innerHTML = "";
+            data.messages.forEach((m) => {
+              const div = document.createElement("div");
+              div.className = "message " + (m.sender === me ? "sent" : "received");
+
+              const ts = new Date(m.timestamp);
+              const localTs = new Date(ts.getTime() - ts.getTimezoneOffset() * 60000);
+              const date = localTs.toLocaleDateString("en-IN");
+              const hours = localTs.getHours();
+              const minutes = localTs.getMinutes().toString().padStart(2, "0");
+              const suffix = hours >= 12 ? "PM" : "AM";
+              const timeFormatted = `${hours.toString().padStart(2, "0")}:${minutes} ${suffix}`;
+              const formatted = `${date} ${timeFormatted}`;
+
+              div.innerHTML = `<p>${m.text}</p><span class="ts">${formatted}</span>`;
+              messagesDiv.appendChild(div);
+            });
+
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+          });
+      }
+
+      function sendMessage() {
+        const txt = messageInput.value.trim();
+        if (!txt) return;
+        fetch("/api/send_message", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ from: me, to: them, message: txt }),
+        })
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.success) {
+              messageInput.value = "";
+              fetchMessages();
+            }
+          });
+      }
+
+      function checkEnter(e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          sendMessage();
+        }
+      }
+
+      function goBack() {
+        console.log("Back button was clicked!");
+        window.location.href = "dash.html";
+      }
+
+      messageInput.addEventListener("keypress", checkEnter);
+      document.getElementById("sendBtn").addEventListener("click", sendMessage);
+      document.getElementById("backBtn").addEventListener("click", goBack);
+
+      fetchMessages();
+      setInterval(fetchMessages, 3000);
+    });
   </script>
 </body>
 </html>
