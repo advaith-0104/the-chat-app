@@ -8,7 +8,7 @@ import os
 app = Flask(__name__, static_folder="static", template_folder="templates")
 
 # ─── Firebase Credential Path ───────────────────────────────────────────────
-cred_path = r"C:\Users\advai\Downloads\chat-app-493a1-firebase-adminsdk-fbsvc-820ec5fabf.json"
+cred_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
 print("🧠 Credential Path:", cred_path)
 print("📂 File Exists:", os.path.exists(cred_path))
 
